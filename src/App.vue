@@ -50,6 +50,7 @@ import { LoroWebsocketClient } from "loro-websocket";
 import { LoroAdaptor, LoroEphemeralAdaptor } from "loro-adaptors";
 import { useMagicKeys, whenever } from "@vueuse/core";
 
+import { LocalDB } from "./LocalDB.ts";
 import Shape from "./components/Shape.vue";
 
 interface Shape {
@@ -65,23 +66,28 @@ const isOnline = ref(true);
 const peopleHere = ref(0);
 const shapes = ref<Record<string, Shape>>({});
 
+const localDB = new LocalDB("shapesApp");
+
 const client = new LoroWebsocketClient({ url: "ws://localhost:8787" });
 const adaptor = new LoroAdaptor();
 const doc = adaptor.getDoc();
 const shapesMap = doc.getMap("shapes");
-
-doc.subscribe(handleDocUpdate);
 
 const ephemeralStore = new EphemeralStore(30_000);
 const ephemeralAdaptor = new LoroEphemeralAdaptor(ephemeralStore);
 const userId = crypto.randomUUID();
 ephemeralStore.set(userId, true);
 
-ephemeralStore.subscribe((event) => {
-  console.log("Ephemeral store event:", event);
-});
+// ephemeralStore.subscribe((event) => {
+//   console.log("Ephemeral store event:", event);
+// });
+
+doc.subscribe(handleDocUpdate);
 
 onMounted(async () => {
+  await localDB.initialize();
+  await localDB.loadIntoDoc(doc);
+
   await client.waitConnected();
   await client.join({ roomId: "home", crdtAdaptor: adaptor });
 
@@ -104,6 +110,8 @@ function handleDocUpdate(event: LoroEventBatch): void {
       shapes.value[id] = shape as unknown as Shape;
     }
   }
+
+  localDB.saveDoc(doc);
 }
 
 watch(

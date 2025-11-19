@@ -9,6 +9,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@loro-dev/flock": "^2.0.0",
     "loro-adaptors": "^0.3.0",
     "loro-protocol": "^0.1.3",
     "loro-websocket": "^0.3.0"
